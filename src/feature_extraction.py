@@ -350,7 +350,7 @@ class BERTExtractor:
                 inputs = {k: v.to(self.device) for k, v in inputs.items()}
                 outputs = self.model(**inputs)
                 # CLS token embedding
-                cls_embedding = outputs.last_hidden_state[:, 0, :].squeeze()
+                cls_embedding = outputs.last_hidden_state[:, 0, :].squeeze(0)
                 all_embeddings.append(cls_embedding.cpu().numpy())
         return np.array(all_embeddings)
 
@@ -373,8 +373,12 @@ class HandcraftedFeatureExtractor:
     ``has_projects_section``, ``has_certifications_section``
     """
 
-    _EMAIL = re.compile(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}")
-    _PHONE = re.compile(r"(\+?\d[\d\s\-().]{7,}\d)")
+    _EMAIL_VALIDATION = re.compile(
+        r"^[a-zA-Z0-9][a-zA-Z0-9_\-]*(?:\.[a-zA-Z0-9_\-]+)*"
+        r"@[a-zA-Z0-9\-]+(?:\.[a-zA-Z0-9\-]+)+$",
+        re.IGNORECASE,
+    )
+    _PHONE = re.compile(r"\+?\d{1,3}[\s\-.]?\(?\d{1,4}\)?[\s\-.]?\d{1,4}[\s\-.]?\d{1,9}")
     _LINKEDIN = re.compile(r"linkedin\.com/in/", re.IGNORECASE)
     _GITHUB = re.compile(r"github\.com/", re.IGNORECASE)
     _URL = re.compile(r"https?://|www\.", re.IGNORECASE)
@@ -390,6 +394,16 @@ class HandcraftedFeatureExtractor:
         "certifications": re.compile(r"\bcertification", re.IGNORECASE),
     }
 
+    def _has_email(self, text: str) -> bool:
+        """Check for an email address using a safe token-validation approach."""
+        for token in text.split():
+            candidate = token.strip("(),;:\"'<>[]")
+            if "@" not in candidate or len(candidate) > 254:
+                continue
+            if self._EMAIL_VALIDATION.match(candidate):
+                return True
+        return False
+
     def extract(self, text: str) -> Dict[str, Union[int, float, bool]]:
         """Extract hand-crafted features from a single text.
 
@@ -401,7 +415,7 @@ class HandcraftedFeatureExtractor:
         """
         sentences = [s for s in re.split(r"[.!?\n]+", text) if s.strip()]
         features: Dict[str, Union[int, float, bool]] = {
-            "has_email": bool(self._EMAIL.search(text)),
+            "has_email": self._has_email(text),
             "has_phone": bool(self._PHONE.search(text)),
             "has_linkedin": bool(self._LINKEDIN.search(text)),
             "has_github": bool(self._GITHUB.search(text)),

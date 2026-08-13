@@ -199,6 +199,7 @@ class SkillsExtractor:
         self.skills_list = [s.lower() for s in (skills_list or ALL_SKILLS)]
         # Sort by length descending so longer phrases are matched first
         self.skills_list.sort(key=len, reverse=True)
+        self._technical_set = set(TECHNICAL_SKILLS)
 
     def extract(self, text: str) -> Dict[str, List[str]]:
         """Extract skills from a single text.
@@ -214,11 +215,10 @@ class SkillsExtractor:
         found_technical: List[str] = []
         found_soft: List[str] = []
 
-        technical_set = set(TECHNICAL_SKILLS)
         for skill in self.skills_list:
             pattern = r"\b" + re.escape(skill) + r"\b"
             if re.search(pattern, text_lower):
-                if skill in technical_set:
+                if skill in self._technical_set:
                     found_technical.append(skill)
                 else:
                     found_soft.append(skill)

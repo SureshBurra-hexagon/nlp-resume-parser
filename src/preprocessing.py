@@ -74,13 +74,19 @@ SECTION_HEADERS: Dict[str, List[str]] = {
     ],
 }
 
-# Compiled regex patterns for common resume fields
+# Compiled regex patterns for common resume fields.
+# Note: email is extracted via a two-step whitespace-split + validation
+# approach to eliminate polynomial ReDoS risk on adversarial input.
+_EMAIL_VALIDATION = re.compile(
+    r"^[a-zA-Z0-9][a-zA-Z0-9_\-]*(?:\.[a-zA-Z0-9_\-]+)*"
+    r"@[a-zA-Z0-9\-]+(?:\.[a-zA-Z0-9\-]+)+$",
+    re.IGNORECASE,
+)
+
 PATTERNS = {
-    "email": re.compile(
-        r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}", re.IGNORECASE
-    ),
     "phone": re.compile(
-        r"(\+?\d[\d\s\-().]{7,}\d)", re.IGNORECASE
+        r"\+?\d{1,3}[\s\-.]?\(?\d{1,4}\)?[\s\-.]?\d{1,4}[\s\-.]?\d{1,9}",
+        re.IGNORECASE
     ),
     "url": re.compile(
         r"https?://[^\s]+|www\.[^\s]+", re.IGNORECASE
@@ -97,6 +103,32 @@ PATTERNS = {
         re.IGNORECASE,
     ),
 }
+
+
+def _extract_email(text: str) -> Optional[str]:
+    """Extract the first email address from *text* without ReDoS risk.
+
+    Uses a whitespace-split approach: each token that contains ``@`` is
+    validated individually with a bounded regex, eliminating the nested
+    quantifier backtracking that causes polynomial ReDoS.
+
+    Args:
+        text: Input text.
+
+    Returns:
+        First valid email string found, or ``None``.
+    """
+    for token in text.split():
+        # Strip common surrounding punctuation
+        candidate = token.strip("(),;:\"'<>[]")
+        if "@" not in candidate:
+            continue
+        # Limit candidate length to avoid edge cases
+        if len(candidate) > 254:
+            continue
+        if _EMAIL_VALIDATION.match(candidate):
+            return candidate
+    return None
 
 
 def extract_text_from_pdf(file_path: str) -> str:
@@ -374,9 +406,7 @@ def extract_contact_info(text: str) -> Dict[str, Optional[str]]:
         "url": None,
     }
 
-    email_match = PATTERNS["email"].search(text)
-    if email_match:
-        result["email"] = email_match.group()
+    result["email"] = _extract_email(text)
 
     phone_match = PATTERNS["phone"].search(text)
     if phone_match:
@@ -427,10 +457,16 @@ def _ensure_nltk_resources() -> None:
         return
     import nltk  # noqa: PLC0415
 
-    for resource in ("punkt", "stopwords", "wordnet", "averaged_perceptron_tagger",
-                     "punkt_tab"):
+    resource_paths = {
+        "punkt": "tokenizers/punkt",
+        "punkt_tab": "tokenizers/punkt_tab",
+        "stopwords": "corpora/stopwords",
+        "wordnet": "corpora/wordnet",
+        "averaged_perceptron_tagger": "taggers/averaged_perceptron_tagger",
+    }
+    for resource, find_path in resource_paths.items():
         try:
-            nltk.data.find(f"tokenizers/{resource}")
+            nltk.data.find(find_path)
         except LookupError:
             try:
                 nltk.download(resource, quiet=True)

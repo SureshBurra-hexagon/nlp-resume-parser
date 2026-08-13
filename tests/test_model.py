@@ -132,7 +132,7 @@ class TestResumeParser:
         result = self.parser.parse(SAMPLE_RESUME)
         # At least one expected section should be present
         present = set(result["sections"].keys())
-        assert present & {"education", "experience", "skills"}
+        assert present & {"education", "experience", "skills"} != set()
 
     def test_education_extraction(self):
         result = self.parser.parse(SAMPLE_RESUME)
