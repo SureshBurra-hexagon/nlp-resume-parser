@@ -1,0 +1,57 @@
+Jane Smith
+jane.smith@datascience.io | +1-415-987-6543
+linkedin.com/in/janesmith | github.com/janesmith-ds
+San Francisco, CA
+
+Summary
+Data Scientist with 6 years of experience applying machine learning and NLP
+to real-world problems. Proven track record of delivering end-to-end ML
+solutions from data ingestion to production deployment.
+
+Education
+M.S. in Statistics
+Stanford University, 2014 – 2016
+GPA: 3.95/4.0
+
+B.S. in Mathematics
+University of California, Berkeley, 2010 – 2014
+GPA: 3.87/4.0
+
+Experience
+Senior Data Scientist, BigTech Corp, 2020 – Present
+- Developed BERT-based document classification models (94% F1-score)
+- Built and maintained real-time ML inference pipelines on GCP
+- Reduced model training time by 60% using distributed training on PyTorch
+- Published 2 internal research papers on transfer learning techniques
+
+Data Scientist, AnalyticsStartup, 2016 – 2020
+- Built NLP models for sentiment analysis and named entity recognition
+- Created automated reporting dashboards using Tableau and Power BI
+- Collaborated with product teams to integrate ML models into mobile apps
+- Conducted A/B testing for recommendation system improvements
+
+Skills
+Python, R, SQL, Scala
+Machine Learning, Deep Learning, NLP, Computer Vision
+TensorFlow, PyTorch, Keras, scikit-learn, Hugging Face Transformers
+pandas, numpy, scipy, matplotlib, seaborn, plotly
+PostgreSQL, MySQL, BigQuery, Redshift
+GCP, AWS, Docker, Kubernetes, Airflow, MLflow
+Tableau, Power BI, Jupyter, Git
+
+Projects
+Multilingual Sentiment Analysis (2022)
+- Fine-tuned XLM-RoBERTa for sentiment analysis in 5 languages
+- Deployed as a scalable REST API serving 50K daily requests
+
+Automated Resume Screener (2021)
+- Built NLP pipeline to rank candidates using skill matching and NER
+- Reduced recruiter workload by 35% in pilot study
+
+Certifications
+Google Professional Machine Learning Engineer (2022)
+Coursera Deep Learning Specialization – Andrew Ng (2019)
+AWS Certified Data Analytics Specialty (2021)
+
+Publications
+Smith, J. et al. "Domain-Adaptive Pre-Training for Resume NLP Tasks", 2022.

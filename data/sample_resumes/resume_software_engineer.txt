@@ -1,0 +1,53 @@
+John Doe
+john.doe@example.com | +1-555-123-4567
+linkedin.com/in/johndoe | github.com/johndoe
+New York, NY
+
+Summary
+Results-driven Software Engineer with 5+ years of experience building
+scalable web applications and data pipelines. Passionate about open-source
+software and machine learning applications.
+
+Education
+B.Tech in Computer Science and Engineering
+Indian Institute of Technology, Delhi, 2013 – 2017
+GPA: 3.8/4.0
+
+Experience
+Senior Software Engineer, Acme Corporation, 2020 – Present
+- Designed and implemented RESTful APIs using Python and FastAPI
+- Led a team of 4 engineers building a distributed data processing pipeline
+- Reduced API latency by 40% through query optimisation and caching
+- Mentored junior engineers and conducted code reviews
+
+Software Engineer, WebStartup Inc., 2017 – 2020
+- Built full-stack web applications using React and Node.js
+- Managed PostgreSQL and MongoDB databases
+- Deployed services on AWS using Docker and Kubernetes
+- Implemented CI/CD pipelines using Jenkins and GitHub Actions
+
+Skills
+Python, JavaScript, TypeScript, Java, Go
+React, Node.js, Express, Django, FastAPI
+Machine Learning, Deep Learning, NLP
+scikit-learn, TensorFlow, PyTorch
+SQL, PostgreSQL, MongoDB, Redis
+Docker, Kubernetes, AWS, GCP, Git
+Linux, Bash
+
+Projects
+Resume Parser NLP System (2023)
+- Built an end-to-end resume parsing pipeline using spaCy and scikit-learn
+- Achieved 91% accuracy on section identification task
+- Deployed as a Streamlit web application
+
+Distributed Task Queue (2022)
+- Designed a distributed task queue system handling 10K tasks/second
+- Used Redis for message brokering and PostgreSQL for persistence
+
+Certifications
+AWS Certified Solutions Architect – Associate (2022)
+Google Professional Data Engineer (2021)
+
+Languages
+English (Fluent), Hindi (Native), Spanish (Intermediate)
