@@ -10,8 +10,9 @@ class ResumeClassifier:
     def __init__(self, random_state: int = 42, max_iter: int = 1000) -> None:
         self.model = LogisticRegression(random_state=random_state, max_iter=max_iter)
 
-    def fit(self, features, labels) -> None:
+    def fit(self, features, labels) -> "ResumeClassifier":
         self.model.fit(features, labels)
+        return self
 
     def predict(self, features):
         return self.model.predict(features)

@@ -10,8 +10,9 @@ class TfidfFeatureExtractor:
     def __init__(self, max_features: int = 3000, ngram_range: tuple[int, int] = (1, 2)) -> None:
         self.vectorizer = TfidfVectorizer(max_features=max_features, ngram_range=ngram_range)
 
-    def fit(self, texts: list[str]) -> None:
+    def fit(self, texts: list[str]) -> "TfidfFeatureExtractor":
         self.vectorizer.fit(texts)
+        return self
 
     def transform(self, texts: list[str]):
         return self.vectorizer.transform(texts)
