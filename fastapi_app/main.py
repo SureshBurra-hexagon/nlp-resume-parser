@@ -43,16 +43,18 @@ class HealthResponse(BaseModel):
     artifacts_loaded: bool
 
 
-def artifacts_available() -> bool:
-    return (MODEL_DIR / "tfidf.joblib").exists() and (MODEL_DIR / "classifier.joblib").exists()
+def artifacts_available(model_dir: Path | None = None) -> bool:
+    artifact_dir = model_dir or MODEL_DIR
+    return (artifact_dir / "tfidf.joblib").exists() and (artifact_dir / "classifier.joblib").exists()
 
 
-@lru_cache(maxsize=1)
-def load_artifacts() -> tuple[TfidfFeatureExtractor, ResumeClassifier]:
-    if not artifacts_available():
+@lru_cache(maxsize=None)
+def load_artifacts(model_dir: str) -> tuple[TfidfFeatureExtractor, ResumeClassifier]:
+    artifact_dir = Path(model_dir)
+    if not artifacts_available(artifact_dir):
         raise FileNotFoundError("Model artifacts are unavailable. Run `python scripts/train.py` first.")
-    extractor = TfidfFeatureExtractor.load(str(MODEL_DIR / "tfidf.joblib"))
-    classifier = ResumeClassifier.load(str(MODEL_DIR / "classifier.joblib"))
+    extractor = TfidfFeatureExtractor.load(str(artifact_dir / "tfidf.joblib"))
+    classifier = ResumeClassifier.load(str(artifact_dir / "classifier.joblib"))
     return extractor, classifier
 
 
@@ -74,7 +76,7 @@ def parse_resume_endpoint(payload: ResumeTextRequest) -> ParsedResumeResponse:
 @app.post("/predict", response_model=PredictionResponse, tags=["resume"])
 def predict_resume_category(payload: ResumeTextRequest) -> PredictionResponse:
     try:
-        extractor, classifier = load_artifacts()
+        extractor, classifier = load_artifacts(str(MODEL_DIR))
     except FileNotFoundError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
