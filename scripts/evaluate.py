@@ -23,8 +23,9 @@ def main() -> None:
     df = pd.read_csv(args.data)
     cleaned = df["resume_text"].fillna("").map(clean_text).tolist()
 
-    extractor = TfidfFeatureExtractor.load(f"{args.model_dir}/tfidf.joblib")
-    classifier = ResumeClassifier.load(f"{args.model_dir}/classifier.joblib")
+    model_dir = Path(args.model_dir)
+    extractor = TfidfFeatureExtractor.load(str(model_dir / "tfidf.joblib"))
+    classifier = ResumeClassifier.load(str(model_dir / "classifier.joblib"))
 
     predictions = classifier.predict(extractor.transform(cleaned))
     metrics = classification_metrics(df["label"].tolist(), predictions)

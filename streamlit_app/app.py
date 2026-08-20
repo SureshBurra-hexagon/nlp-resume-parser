@@ -19,6 +19,14 @@ resume_text = st.text_area("Paste resume text", height=240)
 model_dir = Path(__file__).resolve().parents[1] / "models" / "baseline"
 artifacts_available = (model_dir / "tfidf.joblib").exists() and (model_dir / "classifier.joblib").exists()
 
+
+@st.cache_resource
+def load_artifacts(artifact_dir: str):
+    path = Path(artifact_dir)
+    extractor = TfidfFeatureExtractor.load(str(path / "tfidf.joblib"))
+    classifier = ResumeClassifier.load(str(path / "classifier.joblib"))
+    return extractor, classifier
+
 if st.button("Parse Resume"):
     if not resume_text.strip():
         st.warning("Please paste resume text first.")
@@ -28,8 +36,7 @@ if st.button("Parse Resume"):
         st.json(parsed)
 
         if artifacts_available:
-            extractor = TfidfFeatureExtractor.load(str(model_dir / "tfidf.joblib"))
-            classifier = ResumeClassifier.load(str(model_dir / "classifier.joblib"))
+            extractor, classifier = load_artifacts(str(model_dir))
             prediction = classifier.predict(extractor.transform([parsed["normalized_text"]]))[0]
             st.subheader("Predicted Profile Category")
             st.success(prediction)
