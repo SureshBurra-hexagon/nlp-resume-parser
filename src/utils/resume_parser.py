@@ -26,7 +26,7 @@ SKILL_KEYWORDS = {
 
 def extract_skills(text: str) -> list[str]:
     normalized = clean_text(text)
-    tokens = set(filter(None, re.split(r"[^a-z0-9+/.-]+", normalized)))
+    tokens = set(filter(None, re.split(r"[^a-z0-9+/.\-]+", normalized)))
 
     def contains(skill: str) -> bool:
         return skill in tokens or (not skill.isalnum() and skill in normalized)

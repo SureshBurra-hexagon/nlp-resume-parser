@@ -17,7 +17,6 @@ st.title("NLP Resume Parser - Baseline Demo")
 resume_text = st.text_area("Paste resume text", height=240)
 
 model_dir = Path(__file__).resolve().parents[1] / "models" / "baseline"
-artifacts_available = (model_dir / "tfidf.joblib").exists() and (model_dir / "classifier.joblib").exists()
 
 
 @st.cache_resource
@@ -35,6 +34,7 @@ if st.button("Parse Resume"):
         st.subheader("Extracted Information")
         st.json(parsed)
 
+        artifacts_available = (model_dir / "tfidf.joblib").exists() and (model_dir / "classifier.joblib").exists()
         if artifacts_available:
             extractor, classifier = load_artifacts(str(model_dir))
             prediction = classifier.predict(extractor.transform([parsed["normalized_text"]]))[0]
