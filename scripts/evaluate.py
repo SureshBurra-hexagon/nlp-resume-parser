@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 import argparse
+import sys
 
 import pandas as pd
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from src.evaluation.metrics import classification_metrics
 from src.feature_extraction.tfidf_features import TfidfFeatureExtractor
