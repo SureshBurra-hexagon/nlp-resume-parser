@@ -20,17 +20,19 @@ def test_training_pipeline_produces_predictions_and_metrics():
     )
 
     cleaned = df["resume_text"].map(clean_text).tolist()
-    y = df["label"].tolist()
+    X_train_text, X_test_text = cleaned[:3], cleaned[3:]
+    y_train, y_test = df["label"].tolist()[:3], df["label"].tolist()[3:]
 
     extractor = TfidfFeatureExtractor(max_features=100)
-    X = extractor.fit_transform(cleaned)
+    X_train = extractor.fit_transform(X_train_text)
+    X_test = extractor.transform(X_test_text)
 
     model = ResumeClassifier(max_iter=2000)
-    model.fit(X, y)
-    pred = model.predict(X)
+    model.fit(X_train, y_train)
+    pred = model.predict(X_test)
 
-    metrics = classification_metrics(y, pred)
+    metrics = classification_metrics(y_test, pred)
     assert set(metrics.keys()) == {"accuracy", "precision_macro", "recall_macro", "f1_macro"}
-    assert len(pred) == len(y)
+    assert len(pred) == len(y_test)
     for value in metrics.values():
         assert 0.0 <= value <= 1.0
