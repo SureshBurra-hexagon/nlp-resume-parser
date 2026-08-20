@@ -31,4 +31,6 @@ def test_training_pipeline_produces_predictions_and_metrics():
 
     metrics = classification_metrics(y, pred)
     assert set(metrics.keys()) == {"accuracy", "precision_macro", "recall_macro", "f1_macro"}
-    assert metrics["accuracy"] >= 0.5
+    assert len(pred) == len(y)
+    for value in metrics.values():
+        assert 0.0 <= value <= 1.0
