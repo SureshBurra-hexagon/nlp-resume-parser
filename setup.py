@@ -10,5 +10,7 @@ setup(
         "scikit-learn>=1.3.0",
         "joblib>=1.3.0",
         "streamlit>=1.30.0",
+        "fastapi>=0.141.1",
+        "uvicorn>=0.52.4",
     ],
 )

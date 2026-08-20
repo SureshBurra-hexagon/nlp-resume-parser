@@ -16,6 +16,7 @@ Baseline implementation of an academic NLP resume parsing project, plus a compre
 - Training script: `python scripts/train.py`
 - Evaluation script: `python scripts/evaluate.py`
 - Streamlit demo: `streamlit run streamlit_app/app.py`
+- FastAPI demo: `uvicorn fastapi_app.main:app --reload`
 
 ### Sample data and tests
 - Sample train/test datasets in `data/sample_resumes/`
@@ -34,7 +35,14 @@ python scripts/train.py
 python scripts/evaluate.py
 pytest -q
 streamlit run streamlit_app/app.py
+uvicorn fastapi_app.main:app --reload
 ```
+
+## FastAPI endpoints
+
+- `GET /health` - API health and model artifact availability
+- `POST /parse` - parse resume text into normalized text, contacts, and skills
+- `POST /predict` - parse resume text and predict the baseline profile category
 
 ## Advanced roadmap
 

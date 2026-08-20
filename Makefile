@@ -1,4 +1,4 @@
-.PHONY: test train evaluate streamlit
+.PHONY: test train evaluate streamlit api
 
 test:
 	pytest -q
@@ -11,3 +11,6 @@ evaluate:
 
 streamlit:
 	streamlit run streamlit_app/app.py
+
+api:
+	uvicorn fastapi_app.main:app --reload
