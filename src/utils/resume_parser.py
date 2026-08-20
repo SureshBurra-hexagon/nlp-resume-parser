@@ -3,7 +3,22 @@ from __future__ import annotations
 from src.preprocessing.text_cleaner import clean_text, extract_contact_entities
 
 SKILL_KEYWORDS = {
-    "python", "java", "sql", "aws", "docker", "kubernetes", "pytorch", "tensorflow", "nlp", "fastapi", "streamlit"
+    "python",
+    "java",
+    "sql",
+    "aws",
+    "docker",
+    "kubernetes",
+    "pytorch",
+    "tensorflow",
+    "nlp",
+    "fastapi",
+    "streamlit",
+    "react",
+    "javascript",
+    "typescript",
+    "tableau",
+    "ci/cd",
 }
 
 

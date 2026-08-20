@@ -16,7 +16,7 @@ st.title("NLP Resume Parser - Baseline Demo")
 
 resume_text = st.text_area("Paste resume text", height=240)
 
-model_dir = Path("models/baseline")
+model_dir = Path(__file__).resolve().parents[1] / "models" / "baseline"
 artifacts_available = (model_dir / "tfidf.joblib").exists() and (model_dir / "classifier.joblib").exists()
 
 if st.button("Parse Resume"):
