@@ -1,0 +1,14 @@
+from setuptools import find_packages, setup
+
+setup(
+    name="nlp-resume-parser",
+    version="0.1.0",
+    description="Baseline NLP resume parsing project",
+    packages=find_packages(),
+    install_requires=[
+        "pandas>=2.0.0",
+        "scikit-learn>=1.3.0",
+        "joblib>=1.3.0",
+        "streamlit>=1.30.0",
+    ],
+)
