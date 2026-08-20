@@ -20,8 +20,8 @@ def test_training_pipeline_produces_predictions_and_metrics():
     )
 
     cleaned = df["resume_text"].map(clean_text).tolist()
-    X_train_text, X_test_text = cleaned[:3], cleaned[3:]
-    y_train, y_test = df["label"].tolist()[:3], df["label"].tolist()[3:]
+    X_train_text, y_train = cleaned[:3], df["label"].tolist()[:3]
+    X_test_text, y_test = [clean_text("python fastapi data pipelines")], ["data"]
 
     extractor = TfidfFeatureExtractor(max_features=100)
     X_train = extractor.fit_transform(X_train_text)

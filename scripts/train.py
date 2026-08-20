@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 
-sys.path.append(str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.feature_extraction.tfidf_features import TfidfFeatureExtractor
 from src.models.resume_classifier import ResumeClassifier
