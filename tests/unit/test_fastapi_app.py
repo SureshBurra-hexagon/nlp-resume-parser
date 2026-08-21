@@ -199,3 +199,113 @@ def test_parse_endpoint_accepts_valid_jwt(monkeypatch):
     assert authorized.status_code == 200
 
     monkeypatch.delenv("API_JWT_SECRET", raising=False)
+
+
+def test_parse_endpoint_rejects_expired_jwt(monkeypatch):
+    monkeypatch.setenv("API_JWT_SECRET", "local-test-secret")
+    client = TestClient(api.app)
+
+    header = base64.urlsafe_b64encode(json.dumps({"alg": "HS256", "typ": "JWT"}).encode()).decode().rstrip("=")
+    payload = base64.urlsafe_b64encode(json.dumps({"sub": "tester", "exp": int(time.time()) - 10}).encode()).decode().rstrip("=")
+    signing_input = f"{header}.{payload}".encode()
+    signature = base64.urlsafe_b64encode(hmac.new(b"local-test-secret", signing_input, hashlib.sha256).digest()).decode().rstrip("=")
+    token = f"{header}.{payload}.{signature}"
+
+    response = client.post("/parse", json={"text": "Python FastAPI NLP"}, headers={"Authorization": "Bearer " + token})
+    assert response.status_code == 401
+
+    monkeypatch.delenv("API_JWT_SECRET", raising=False)
+
+
+def test_parse_endpoint_rejects_tampered_jwt(monkeypatch):
+    monkeypatch.setenv("API_JWT_SECRET", "local-test-secret")
+    client = TestClient(api.app)
+
+    header = base64.urlsafe_b64encode(json.dumps({"alg": "HS256", "typ": "JWT"}).encode()).decode().rstrip("=")
+    payload = base64.urlsafe_b64encode(json.dumps({"sub": "tester", "exp": int(time.time()) + 120}).encode()).decode().rstrip("=")
+    signing_input = f"{header}.{payload}".encode()
+    signature = base64.urlsafe_b64encode(hmac.new(b"wrong-secret", signing_input, hashlib.sha256).digest()).decode().rstrip("=")
+    token = f"{header}.{payload}.{signature}"
+
+    response = client.post("/parse", json={"text": "Python FastAPI NLP"}, headers={"Authorization": "Bearer " + token})
+    assert response.status_code == 401
+
+    monkeypatch.delenv("API_JWT_SECRET", raising=False)
+
+
+def test_root_endpoint_returns_message():
+    client = TestClient(api.app)
+    response = client.get("/")
+    assert response.status_code == 200
+    body = response.json()
+    assert "message" in body
+    assert "/docs" in body.get("docs_url", "")
+
+
+def test_evaluate_endpoint_mismatched_lengths():
+    client = TestClient(api.app)
+    response = client.post(
+        "/evaluate",
+        json={"labels": ["data_science", "frontend"], "predictions": ["data_science"]},
+    )
+    assert response.status_code == 422
+
+
+def test_advanced_predict_endpoint_requires_trained_artifacts(tmp_path, monkeypatch):
+    monkeypatch.setattr(api, "ADVANCED_MODEL_DIR", tmp_path / "advanced")
+    api.load_advanced_artifacts.cache_clear()
+
+    client = TestClient(api.app)
+    response = client.post("/predict/advanced", json={"text": "Python FastAPI NLP"})
+
+    assert response.status_code == 503
+    assert "train_advanced" in response.json()["detail"]
+
+
+def test_analyze_endpoint_no_experience_years():
+    client = TestClient(api.app)
+    response = client.post(
+        "/analyze",
+        json={"texts": ["Python developer", "React engineer"]},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["average_experience_years"] == 0.0
+    assert body["sample_count"] == 2
+
+
+def test_rate_limiting_blocks_excess_requests(monkeypatch):
+    monkeypatch.setenv("API_RATE_LIMIT_REQUESTS", "3")
+    monkeypatch.setenv("API_RATE_LIMIT_WINDOW_SECONDS", "60")
+    api.clear_rate_limit_state()
+    client = TestClient(api.app)
+
+    for _ in range(3):
+        r = client.post("/parse", json={"text": "Python"})
+        assert r.status_code == 200
+
+    blocked = client.post("/parse", json={"text": "Python"})
+    assert blocked.status_code == 429
+
+    monkeypatch.delenv("API_RATE_LIMIT_REQUESTS", raising=False)
+    monkeypatch.delenv("API_RATE_LIMIT_WINDOW_SECONDS", raising=False)
+    api.clear_rate_limit_state()
+
+
+def test_validation_error_returns_structured_response():
+    client = TestClient(api.app)
+    # Sending empty body to a POST endpoint that requires text
+    response = client.post("/parse", json={})
+    assert response.status_code == 422
+    body = response.json()
+    assert body["error"] == "validation_error"
+
+
+def test_advanced_batch_endpoint_requires_trained_artifacts(tmp_path, monkeypatch):
+    monkeypatch.setattr(api, "ADVANCED_MODEL_DIR", tmp_path / "advanced")
+    api.load_advanced_artifacts.cache_clear()
+
+    client = TestClient(api.app)
+    response = client.post("/predict/advanced/batch", json={"texts": ["Python NLP", "React UI"]})
+
+    assert response.status_code == 503
