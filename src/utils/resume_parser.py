@@ -2,6 +2,12 @@ from __future__ import annotations
 
 import re
 
+from src.ner.resume_entities import (
+    estimate_experience_years,
+    extract_certifications,
+    extract_education_entities,
+    extract_sections,
+)
 from src.preprocessing.text_cleaner import clean_text, extract_contact_entities
 
 SKILL_KEYWORDS = {
@@ -38,9 +44,17 @@ def parse_resume(text: str) -> dict:
     normalized = clean_text(text)
     contacts = extract_contact_entities(text)
     skills = extract_skills(text)
+    sections = extract_sections(text)
+    education = extract_education_entities(text)
+    certifications = extract_certifications(text)
+    experience_years = estimate_experience_years(text)
     return {
         "normalized_text": normalized,
         "emails": contacts["emails"],
         "phones": contacts["phones"],
         "skills": skills,
+        "sections": sections,
+        "education": education,
+        "certifications": certifications,
+        "experience_years": experience_years,
     }

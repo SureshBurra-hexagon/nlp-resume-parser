@@ -12,9 +12,18 @@ Baseline implementation of an academic NLP resume parsing project, plus a compre
 - Resume profile classification with Logistic Regression (`src/models/resume_classifier.py`)
 - Evaluation metrics: Accuracy, Precision, Recall, F1 (`src/evaluation/metrics.py`)
 
+### Phase 3 advanced modules
+- Section-aware and ontology-aware resume parsing with education, certification, and experience extraction (`src/ner/resume_entities.py`)
+- Hybrid word + character TF-IDF embeddings (`src/embedding/hybrid_features.py`)
+- Deterministic training-time augmentation for synthetic resume variants (`src/augmentation/resume_augmenter.py`)
+- Soft-voting advanced ensemble classifier (`src/models/advanced_resume_classifier.py`)
+- Hyperparameter search and batch inference utilities (`src/optimization/`)
+
 ### Scripts and demo
 - Training script: `python scripts/train.py`
 - Evaluation script: `python scripts/evaluate.py`
+- Advanced training script: `python scripts/train_advanced.py`
+- Advanced evaluation/benchmark script: `python scripts/evaluate_advanced.py`
 - Streamlit demo: `streamlit run streamlit_app/app.py`
 - FastAPI demo: `uvicorn fastapi_app.main:app --reload`
 
@@ -33,6 +42,8 @@ pip install -r requirements-dev.txt
 ```bash
 python scripts/train.py
 python scripts/evaluate.py
+python scripts/train_advanced.py
+python scripts/evaluate_advanced.py
 pytest -q
 streamlit run streamlit_app/app.py
 uvicorn fastapi_app.main:app --reload
@@ -40,9 +51,11 @@ uvicorn fastapi_app.main:app --reload
 
 ## FastAPI endpoints
 
-- `GET /health` - API health and model artifact availability
-- `POST /parse` - parse resume text into normalized text, contacts, and skills
+- `GET /health` - API health with baseline and advanced artifact availability
+- `POST /parse` - parse resume text into normalized text, contacts, skills, sections, education, certifications, and experience
 - `POST /predict` - parse resume text and predict the baseline profile category
+- `POST /predict/advanced` - parse resume text and predict with the phase 3 advanced ensemble
+- `POST /predict/advanced/batch` - batch advanced predictions using cached parsing
 
 ## Advanced roadmap
 
