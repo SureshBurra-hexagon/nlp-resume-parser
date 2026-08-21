@@ -57,7 +57,9 @@ class TransformerResumeClassifier:
         embedder: TextEmbedder | None = None,
     ) -> "TransformerResumeClassifier":
         payload: Any = joblib.load(path)
-        if isinstance(payload, dict) and "classifier" in payload:
+        if isinstance(payload, dict):
+            if "classifier" not in payload:
+                raise ValueError("Unsupported transformer classifier artifact format: missing `classifier` payload.")
             model_name = str(payload.get("model_name", "distilbert-base-uncased"))
             random_state = int(payload.get("random_state", 42))
             classifier = payload["classifier"]
@@ -68,4 +70,7 @@ class TransformerResumeClassifier:
                 classifier=classifier,
             )
 
-        return cls(embedder=embedder, classifier=payload)
+        if isinstance(payload, LogisticRegression):
+            return cls(embedder=embedder, classifier=payload)
+
+        raise ValueError("Unsupported transformer classifier artifact format.")
