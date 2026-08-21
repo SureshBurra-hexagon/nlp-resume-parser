@@ -60,17 +60,20 @@ class HealthResponse(BaseModel):
     advanced_artifacts_loaded: bool
 
 
-def artifacts_available(model_dir: Path | None = None) -> bool:
+def baseline_artifacts_available(model_dir: Path | None = None) -> bool:
     artifact_dir = model_dir or BASELINE_MODEL_DIR
-    if (artifact_dir / "advanced_pipeline.joblib").exists():
-        return (artifact_dir / "advanced_pipeline.joblib").exists()
     return (artifact_dir / "tfidf.joblib").exists() and (artifact_dir / "classifier.joblib").exists()
+
+
+def advanced_artifacts_available(model_dir: Path | None = None) -> bool:
+    artifact_dir = model_dir or ADVANCED_MODEL_DIR
+    return (artifact_dir / "advanced_pipeline.joblib").exists()
 
 
 @lru_cache(maxsize=None)
 def load_artifacts(model_dir: str) -> tuple[TfidfFeatureExtractor, ResumeClassifier]:
     artifact_dir = Path(model_dir)
-    if not artifacts_available(artifact_dir):
+    if not baseline_artifacts_available(artifact_dir):
         raise FileNotFoundError("Model artifacts are unavailable. Run `python scripts/train.py` first.")
     extractor = TfidfFeatureExtractor.load(str(artifact_dir / "tfidf.joblib"))
     classifier = ResumeClassifier.load(str(artifact_dir / "classifier.joblib"))
@@ -80,7 +83,7 @@ def load_artifacts(model_dir: str) -> tuple[TfidfFeatureExtractor, ResumeClassif
 @lru_cache(maxsize=None)
 def load_advanced_artifacts(model_dir: str) -> AdvancedResumeClassifier:
     artifact_dir = Path(model_dir)
-    if not artifacts_available(artifact_dir):
+    if not advanced_artifacts_available(artifact_dir):
         raise FileNotFoundError("Advanced model artifacts are unavailable. Run `python scripts/train_advanced.py` first.")
     return AdvancedResumeClassifier.load(str(artifact_dir / "advanced_pipeline.joblib"))
 
@@ -104,8 +107,8 @@ def read_root() -> dict[str, str]:
 def health_check() -> HealthResponse:
     return HealthResponse(
         status="ok",
-        baseline_artifacts_loaded=artifacts_available(BASELINE_MODEL_DIR),
-        advanced_artifacts_loaded=artifacts_available(ADVANCED_MODEL_DIR),
+        baseline_artifacts_loaded=baseline_artifacts_available(BASELINE_MODEL_DIR),
+        advanced_artifacts_loaded=advanced_artifacts_available(ADVANCED_MODEL_DIR),
     )
 
 
