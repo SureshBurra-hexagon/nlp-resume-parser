@@ -3,6 +3,10 @@ from __future__ import annotations
 from collections import Counter, defaultdict, deque
 from functools import lru_cache
 from pathlib import Path
+import base64
+import hashlib
+import hmac
+import json
 import logging
 import os
 import sys
@@ -10,6 +14,7 @@ import time
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
@@ -116,6 +121,10 @@ def _configured_token() -> str:
     return os.getenv("API_BEARER_TOKEN", "").strip()
 
 
+def _configured_jwt_secret() -> str:
+    return os.getenv("API_JWT_SECRET", "").strip()
+
+
 def _rate_limit_window_seconds() -> int:
     return _env_int("API_RATE_LIMIT_WINDOW_SECONDS", 60)
 
@@ -172,14 +181,63 @@ def _parsed_resume_response(text: str) -> ParsedResumeResponse:
     return ParsedResumeResponse(**BATCH_PROCESSOR.parse(text))
 
 
+def _urlsafe_b64decode(value: str) -> bytes:
+    padded = value + "=" * ((4 - len(value) % 4) % 4)
+    return base64.urlsafe_b64decode(padded.encode("utf-8"))
+
+
+def _verify_hs256_jwt(token: str, secret: str) -> bool:
+    try:
+        header_b64, payload_b64, signature_b64 = token.split(".")
+        header = json.loads(_urlsafe_b64decode(header_b64))
+        payload = json.loads(_urlsafe_b64decode(payload_b64))
+    except Exception:
+        return False
+
+    if header.get("alg") != "HS256":
+        return False
+
+    signing_input = f"{header_b64}.{payload_b64}".encode("utf-8")
+    expected_signature = hmac.new(secret.encode("utf-8"), signing_input, hashlib.sha256).digest()
+    actual_signature = _urlsafe_b64decode(signature_b64)
+    if not hmac.compare_digest(expected_signature, actual_signature):
+        return False
+
+    expiration = payload.get("exp")
+    if expiration is not None:
+        try:
+            if float(expiration) < time.time():
+                return False
+        except (TypeError, ValueError):
+            return False
+
+    return True
+
+
+def _prune_rate_limit_buckets(now: float, window: int) -> None:
+    stale_keys = []
+    for key, bucket in _RATE_LIMIT_BUCKETS.items():
+        while bucket and now - bucket[0] > window:
+            bucket.popleft()
+        if not bucket:
+            stale_keys.append(key)
+    for key in stale_keys:
+        _RATE_LIMIT_BUCKETS.pop(key, None)
+
+
 async def verify_access_token(
     request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(_AUTH_SCHEME),
 ) -> None:
     expected_token = _configured_token()
-    if not expected_token:
+    jwt_secret = _configured_jwt_secret()
+    if not expected_token and not jwt_secret:
         return
     provided_token = credentials.credentials.strip() if credentials else ""
+    if jwt_secret:
+        if not _verify_hs256_jwt(provided_token, jwt_secret):
+            raise HTTPException(status_code=401, detail="Unauthorized: invalid or expired JWT token.")
+        return
     if provided_token != expected_token:
         raise HTTPException(status_code=401, detail="Unauthorized: invalid or missing bearer token.")
 
@@ -199,6 +257,7 @@ async def add_rate_limiting(request: Request, call_next):
     now = time.time()
     window = _rate_limit_window_seconds()
     limit = _rate_limit_requests()
+    _prune_rate_limit_buckets(now, window)
     bucket = _RATE_LIMIT_BUCKETS[_auth_key(credentials, request)]
 
     while bucket and now - bucket[0] > window:
@@ -243,12 +302,13 @@ async def unhandled_exception_handler(_: Request, exc: Exception):
     )
 
 
-from fastapi.middleware.cors import CORSMiddleware
+_ALLOWED_ORIGINS = _env_csv("API_CORS_ALLOW_ORIGINS", "*")
+_ALLOW_CREDENTIALS = "*" not in _ALLOWED_ORIGINS
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_env_csv("API_CORS_ALLOW_ORIGINS", "*"),
-    allow_credentials=True,
+    allow_origins=_ALLOWED_ORIGINS,
+    allow_credentials=_ALLOW_CREDENTIALS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -293,7 +353,7 @@ def predict_resume_category(payload: ResumeTextRequest, _: None = Depends(verify
     parsed_resume = _parsed_resume_response(payload.text)
     features = extractor.transform([parsed_resume.normalized_text])
     probabilities = classifier.predict_proba(features)[0]
-    prediction = classifier.predict(features)[0]
+    prediction = classifier.model.classes_[probabilities.argmax()]
 
     return PredictionResponse(
         parsed_resume=parsed_resume,

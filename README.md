@@ -21,7 +21,7 @@ Baseline implementation of an academic NLP resume parsing project, plus a compre
 
 ### Phase 4 web, API, and deployment modules
 - Streamlit phase 4 experience with single and batch workflows, history, ranking, export, and analytics (`streamlit_app/app.py`)
-- FastAPI phase 4 backend with parse/predict/evaluate/analyze endpoints, optional bearer auth, CORS, rate limiting, and structured error handling (`fastapi_app/main.py`)
+- FastAPI phase 4 backend with parse/predict/evaluate/analyze endpoints, optional bearer/JWT auth, CORS, rate limiting, and structured error handling (`fastapi_app/main.py`)
 - Container deployment assets: `Dockerfile`, `docker-compose.yml`, `.env.example`, and runbook (`docs/DEPLOYMENT_RUNBOOK.md`)
 
 ### Scripts and demo

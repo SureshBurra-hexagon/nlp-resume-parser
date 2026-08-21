@@ -15,7 +15,7 @@ from src.preprocessing.text_cleaner import clean_text
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Train the phase 3 advanced resume classifier")
+    parser = argparse.ArgumentParser(description="Train the phase 4 advanced resume classifier")
     parser.add_argument("--data", default="data/sample_resumes/train.csv")
     parser.add_argument("--model-dir", default="models/advanced")
     parser.add_argument("--disable-augmentation", action="store_true")

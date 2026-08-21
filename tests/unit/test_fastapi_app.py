@@ -1,4 +1,9 @@
 from pathlib import Path
+import base64
+import hashlib
+import hmac
+import json
+import time
 
 from fastapi.testclient import TestClient
 
@@ -176,3 +181,21 @@ def test_parse_endpoint_requires_auth_when_configured(monkeypatch):
     assert "Unauthorized" in unauthorized.json()["detail"]
 
     monkeypatch.delenv("API_BEARER_TOKEN", raising=False)
+
+
+def test_parse_endpoint_accepts_valid_jwt(monkeypatch):
+    monkeypatch.setenv("API_JWT_SECRET", "local-test-secret")
+    client = TestClient(api.app)
+
+    header = base64.urlsafe_b64encode(json.dumps({"alg": "HS256", "typ": "JWT"}).encode()).decode().rstrip("=")
+    payload = base64.urlsafe_b64encode(json.dumps({"sub": "tester", "exp": int(time.time()) + 120}).encode()).decode().rstrip("=")
+    signing_input = f"{header}.{payload}".encode()
+    signature = base64.urlsafe_b64encode(hmac.new(b"local-test-secret", signing_input, hashlib.sha256).digest()).decode().rstrip("=")
+    token = f"{header}.{payload}.{signature}"
+
+    headers = {}
+    headers["Authorization"] = "Bearer " + token
+    authorized = client.post("/parse", json={"text": "Python FastAPI NLP"}, headers=headers)
+    assert authorized.status_code == 200
+
+    monkeypatch.delenv("API_JWT_SECRET", raising=False)

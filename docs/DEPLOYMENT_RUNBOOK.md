@@ -19,7 +19,7 @@
    - Streamlit app: `http://localhost:8501`
 
 ## Operational notes
-- API includes optional bearer token authentication via `API_BEARER_TOKEN`.
+- API includes optional authentication via static bearer token (`API_BEARER_TOKEN`) or JWT verification (`API_JWT_SECRET`, HS256).
 - API includes configurable CORS and rate limiting.
 - API health endpoint is used for container health checks.
 

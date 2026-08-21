@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 setup(
     name="nlp-resume-parser",
     version="0.1.0",
-    description="Phase 3 NLP resume parsing project with advanced parsing, optimization, and API demos",
+    description="Phase 4 NLP resume parsing project with advanced parsing, API, web app, and deployment modules",
     packages=find_packages(),
     install_requires=[
         "pandas>=2.0.0",

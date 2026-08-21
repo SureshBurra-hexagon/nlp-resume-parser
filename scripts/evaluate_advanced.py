@@ -41,7 +41,7 @@ def benchmark_advanced(texts: list[str], labels: list[str], model_dir: Path) -> 
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Evaluate the phase 3 advanced resume classifier")
+    parser = argparse.ArgumentParser(description="Evaluate the phase 4 advanced resume classifier")
     parser.add_argument("--data", default="data/sample_resumes/test.csv")
     parser.add_argument("--baseline-model-dir", default="models/baseline")
     parser.add_argument("--advanced-model-dir", default="models/advanced")
