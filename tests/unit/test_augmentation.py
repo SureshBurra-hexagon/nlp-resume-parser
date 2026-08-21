@@ -2,11 +2,11 @@ from src.augmentation.resume_augmenter import augment_resume_text, augment_train
 
 
 def test_augment_resume_text_generates_deterministic_variants():
-    variants = augment_resume_text("Data scientist with machine learning and React experience", max_variants=2)
+    variants = augment_resume_text("Data scientist with machine learning and React experience", max_variants=3)
 
-    assert len(variants) == 2
+    assert len(variants) == 3
     assert any("ml" in variant for variant in variants)
-    assert any("react.js" in variant or "delivered measurable project outcomes" in variant for variant in variants)
+    assert any("react.js" in variant for variant in variants)
 
 
 def test_augment_training_data_preserves_labels():
