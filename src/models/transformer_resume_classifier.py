@@ -71,6 +71,10 @@ class TransformerResumeClassifier:
             )
 
         if isinstance(payload, LogisticRegression):
+            if embedder is None:
+                raise ValueError(
+                    "Legacy transformer artifacts require an explicit `embedder` when loading to prevent model mismatch."
+                )
             return cls(embedder=embedder, classifier=payload)
 
         raise ValueError("Unsupported transformer classifier artifact format.")
