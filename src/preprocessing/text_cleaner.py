@@ -9,6 +9,24 @@ EMAIL_PATTERN = re.compile(r"\b[\w.+-]+@[\w-]+(?:\.[\w-]+)+\b")
 PHONE_PATTERN = re.compile(r"(?:\+?\d{1,3}[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}")
 WHITESPACE_PATTERN = re.compile(r"\s+")
 
+# Unified patterns dict for use by downstream consumers (e.g. app.py).
+# Groups commonly-needed compiled regexes by category.
+PATTERNS: dict[str, re.Pattern[str]] = {
+    "email": EMAIL_PATTERN,
+    "phone": PHONE_PATTERN,
+    "years_experience": re.compile(r"\b(\d{1,2})\+?\s+years?\b", re.IGNORECASE),
+    "url": re.compile(r"https?://[^\s]+|www\.[^\s]+", re.IGNORECASE),
+    "linkedin": re.compile(r"linkedin\.com/in/[\w-]+", re.IGNORECASE),
+    "github": re.compile(r"github\.com/[\w-]+", re.IGNORECASE),
+    "section_header": re.compile(
+        r"^(summary|profile|objective|about|experience|work experience|employment|"
+        r"professional experience|education|academic background|academics|skills|"
+        r"technical skills|core skills|competencies|projects|project experience|"
+        r"certifications|licenses|credentials)\s*:?$",
+        re.IGNORECASE | re.MULTILINE,
+    ),
+}
+
 
 def extract_text_from_pdf(source: Union[str, Path, bytes]) -> str:
     """Extract plain text from a PDF file path, Path object, or raw bytes.
