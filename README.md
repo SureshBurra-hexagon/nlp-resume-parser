@@ -34,6 +34,12 @@ Baseline implementation of an academic NLP resume parsing project, plus a compre
 - FastAPI phase 4 backend with parse/predict/evaluate/analyze endpoints, optional bearer/JWT auth, CORS, rate limiting, and structured error handling (`fastapi_app/main.py`)
 - Container deployment assets: `Dockerfile`, `docker-compose.yml`, `.env.example`, and runbook (`docs/DEPLOYMENT_RUNBOOK.md`)
 
+### Phase 5 advanced product features
+- ATS keyword matching and scoring against a job description (`src/analysis/ats_scorer.py`)
+- Experience level classification and career path projection (`src/analysis/experience_classifier.py`)
+- Multi-dimensional resume quality scoring and salary band estimation (`src/analysis/resume_scorer.py`)
+- Recommendation engine for actionable resume improvement suggestions (`src/analysis/recommender.py`)
+
 ### Scripts and demo
 - Training script: `python scripts/train.py`
 - Evaluation script: `python scripts/evaluate.py`
