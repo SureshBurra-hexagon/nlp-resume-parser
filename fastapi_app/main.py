@@ -145,7 +145,7 @@ def predict_advanced_resume_category(payload: ResumeTextRequest) -> PredictionRe
 
     parsed_resume = _parsed_resume_response(payload.text)
     probabilities = classifier.predict_proba([parsed_resume.normalized_text])[0]
-    prediction = classifier.predict([parsed_resume.normalized_text])[0]
+    prediction = classifier.model.classes_[probabilities.argmax()]
 
     return PredictionResponse(
         parsed_resume=parsed_resume,

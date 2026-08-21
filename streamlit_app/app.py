@@ -55,8 +55,9 @@ if st.button("Parse Resume"):
             st.success(f"{prediction} ({confidence:.2%})")
         elif model_choice == "advanced" and advanced_artifacts_available:
             classifier = load_advanced_artifacts(str(advanced_model_dir))
-            prediction = classifier.predict([parsed["normalized_text"]])[0]
-            confidence = float(max(classifier.predict_proba([parsed["normalized_text"]])[0]))
+            probabilities = classifier.predict_proba([parsed["normalized_text"]])[0]
+            prediction = classifier.model.classes_[probabilities.argmax()]
+            confidence = float(max(probabilities))
             st.subheader("Predicted Profile Category")
             st.success(f"{prediction} ({confidence:.2%})")
         else:
