@@ -129,3 +129,50 @@ def test_advanced_predict_endpoints_return_predictions(tmp_path, monkeypatch):
     predictions = batch_response.json()["predictions"]
     assert len(predictions) == 2
     assert predictions[0]["predicted_profile_category"] == "data_science"
+
+
+def test_evaluate_endpoint_returns_metrics():
+    client = TestClient(api.app)
+    response = client.post(
+        "/evaluate",
+        json={
+            "labels": ["data_science", "frontend", "frontend"],
+            "predictions": ["data_science", "frontend", "data_science"],
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["sample_count"] == 3
+    assert set(body["metrics"]) >= {"accuracy", "precision_macro", "recall_macro", "f1_macro"}
+
+
+def test_analyze_endpoint_returns_summary():
+    client = TestClient(api.app)
+    response = client.post(
+        "/analyze",
+        json={
+            "texts": [
+                "Python FastAPI NLP with 5 years experience",
+                "React JavaScript TypeScript frontend engineer with 3 years experience",
+            ]
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["sample_count"] == 2
+    assert body["average_token_count"] > 0
+    assert body["average_skill_count"] > 0
+    assert "python" in body["top_skills"] or "react" in body["top_skills"]
+
+
+def test_parse_endpoint_requires_auth_when_configured(monkeypatch):
+    monkeypatch.setenv("API_BEARER_TOKEN", "secret-token")
+    client = TestClient(api.app)
+
+    unauthorized = client.post("/parse", json={"text": "Python FastAPI NLP"})
+    assert unauthorized.status_code == 401
+    assert "Unauthorized" in unauthorized.json()["detail"]
+
+    monkeypatch.delenv("API_BEARER_TOKEN", raising=False)

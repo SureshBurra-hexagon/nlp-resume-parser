@@ -1,14 +1,22 @@
 from __future__ import annotations
 
+from collections import Counter, defaultdict, deque
 from functools import lru_cache
 from pathlib import Path
+import logging
+import os
 import sys
+import time
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from src.evaluation.metrics import classification_metrics
 from src.models.advanced_resume_classifier import AdvancedResumeClassifier
 from src.feature_extraction.tfidf_features import TfidfFeatureExtractor
 from src.models.resume_classifier import ResumeClassifier
@@ -17,11 +25,16 @@ from src.optimization.inference import ResumeBatchProcessor
 BASELINE_MODEL_DIR = Path(__file__).resolve().parents[1] / "models" / "baseline"
 ADVANCED_MODEL_DIR = Path(__file__).resolve().parents[1] / "models" / "advanced"
 BATCH_PROCESSOR = ResumeBatchProcessor()
+LOG = logging.getLogger("resume_api")
+logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(
     title="NLP Resume Parser API",
-    description="FastAPI demo for parsing resumes and serving baseline profile predictions.",
-    version="0.2.0",
+    description=(
+        "Phase 4 FastAPI backend for parsing, analysis, baseline/advanced prediction, "
+        "and evaluation with authentication, rate limiting, and structured error responses."
+    ),
+    version="0.4.0",
 )
 
 
@@ -58,6 +71,67 @@ class HealthResponse(BaseModel):
     status: str
     baseline_artifacts_loaded: bool
     advanced_artifacts_loaded: bool
+
+
+class ErrorResponse(BaseModel):
+    error: str
+    message: str
+    detail: str | None = None
+
+
+class EvaluationRequest(BaseModel):
+    labels: list[str] = Field(..., min_length=1)
+    predictions: list[str] = Field(..., min_length=1)
+
+
+class EvaluationResponse(BaseModel):
+    sample_count: int
+    metrics: dict[str, float]
+
+
+class AnalyzeResponse(BaseModel):
+    sample_count: int
+    average_token_count: float
+    average_skill_count: float
+    average_experience_years: float
+    top_skills: list[str]
+
+
+_AUTH_SCHEME = HTTPBearer(auto_error=False)
+_RATE_LIMIT_BUCKETS: dict[str, deque[float]] = defaultdict(deque)
+
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        return int(os.getenv(name, str(default)))
+    except ValueError:
+        return default
+
+
+def _env_csv(name: str, default: str) -> list[str]:
+    return [item.strip() for item in os.getenv(name, default).split(",") if item.strip()]
+
+
+def _configured_token() -> str:
+    return os.getenv("API_BEARER_TOKEN", "").strip()
+
+
+def _rate_limit_window_seconds() -> int:
+    return _env_int("API_RATE_LIMIT_WINDOW_SECONDS", 60)
+
+
+def _rate_limit_requests() -> int:
+    return _env_int("API_RATE_LIMIT_REQUESTS", 120)
+
+
+def _auth_key(credentials: HTTPAuthorizationCredentials | None, request: Request) -> str:
+    if credentials is not None and credentials.credentials:
+        return f"token:{credentials.credentials}"
+    return f"ip:{request.client.host if request.client else 'unknown'}"
+
+
+def clear_rate_limit_state() -> None:
+    _RATE_LIMIT_BUCKETS.clear()
 
 
 def baseline_artifacts_available(model_dir: Path | None = None) -> bool:
@@ -98,6 +172,88 @@ def _parsed_resume_response(text: str) -> ParsedResumeResponse:
     return ParsedResumeResponse(**BATCH_PROCESSOR.parse(text))
 
 
+async def verify_access_token(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Depends(_AUTH_SCHEME),
+) -> None:
+    expected_token = _configured_token()
+    if not expected_token:
+        return
+    provided_token = credentials.credentials.strip() if credentials else ""
+    if provided_token != expected_token:
+        raise HTTPException(status_code=401, detail="Unauthorized: invalid or missing bearer token.")
+
+
+@app.middleware("http")
+async def add_request_logging(request: Request, call_next):
+    started = time.perf_counter()
+    response = await call_next(request)
+    elapsed_ms = (time.perf_counter() - started) * 1000
+    LOG.info("%s %s status=%s duration_ms=%.2f", request.method, request.url.path, response.status_code, elapsed_ms)
+    return response
+
+
+@app.middleware("http")
+async def add_rate_limiting(request: Request, call_next):
+    credentials = await _AUTH_SCHEME(request)
+    now = time.time()
+    window = _rate_limit_window_seconds()
+    limit = _rate_limit_requests()
+    bucket = _RATE_LIMIT_BUCKETS[_auth_key(credentials, request)]
+
+    while bucket and now - bucket[0] > window:
+        bucket.popleft()
+
+    if len(bucket) >= limit:
+        return JSONResponse(
+            status_code=429,
+            content=ErrorResponse(
+                error="rate_limit_exceeded",
+                message="Rate limit exceeded.",
+                detail=f"Allowed {limit} requests per {window} seconds.",
+            ).model_dump(),
+        )
+
+    bucket.append(now)
+    return await call_next(request)
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(_: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=ErrorResponse(error="http_error", message="Request failed.", detail=str(exc.detail)).model_dump(),
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(_: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content=ErrorResponse(error="validation_error", message="Request validation failed.", detail=str(exc)).model_dump(),
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(_: Request, exc: Exception):
+    LOG.exception("Unhandled exception", exc_info=exc)
+    return JSONResponse(
+        status_code=500,
+        content=ErrorResponse(error="internal_server_error", message="Unexpected internal server error.").model_dump(),
+    )
+
+
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_env_csv("API_CORS_ALLOW_ORIGINS", "*"),
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 @app.get("/", tags=["meta"])
 def read_root() -> dict[str, str]:
     return {"message": "NLP Resume Parser API", "docs_url": "/docs"}
@@ -112,13 +268,23 @@ def health_check() -> HealthResponse:
     )
 
 
-@app.post("/parse", response_model=ParsedResumeResponse, tags=["resume"])
-def parse_resume_endpoint(payload: ResumeTextRequest) -> ParsedResumeResponse:
+@app.post(
+    "/parse",
+    response_model=ParsedResumeResponse,
+    responses={401: {"model": ErrorResponse}, 429: {"model": ErrorResponse}},
+    tags=["resume"],
+)
+def parse_resume_endpoint(payload: ResumeTextRequest, _: None = Depends(verify_access_token)) -> ParsedResumeResponse:
     return _parsed_resume_response(payload.text)
 
 
-@app.post("/predict", response_model=PredictionResponse, tags=["resume"])
-def predict_resume_category(payload: ResumeTextRequest) -> PredictionResponse:
+@app.post(
+    "/predict",
+    response_model=PredictionResponse,
+    responses={401: {"model": ErrorResponse}, 429: {"model": ErrorResponse}, 503: {"model": ErrorResponse}},
+    tags=["resume"],
+)
+def predict_resume_category(payload: ResumeTextRequest, _: None = Depends(verify_access_token)) -> PredictionResponse:
     try:
         extractor, classifier = load_artifacts(str(BASELINE_MODEL_DIR))
     except FileNotFoundError as exc:
@@ -136,8 +302,13 @@ def predict_resume_category(payload: ResumeTextRequest) -> PredictionResponse:
     )
 
 
-@app.post("/predict/advanced", response_model=PredictionResponse, tags=["resume"])
-def predict_advanced_resume_category(payload: ResumeTextRequest) -> PredictionResponse:
+@app.post(
+    "/predict/advanced",
+    response_model=PredictionResponse,
+    responses={401: {"model": ErrorResponse}, 429: {"model": ErrorResponse}, 503: {"model": ErrorResponse}},
+    tags=["resume"],
+)
+def predict_advanced_resume_category(payload: ResumeTextRequest, _: None = Depends(verify_access_token)) -> PredictionResponse:
     try:
         classifier = load_advanced_artifacts(str(ADVANCED_MODEL_DIR))
     except FileNotFoundError as exc:
@@ -154,8 +325,16 @@ def predict_advanced_resume_category(payload: ResumeTextRequest) -> PredictionRe
     )
 
 
-@app.post("/predict/advanced/batch", response_model=BatchPredictionResponse, tags=["resume"])
-def predict_advanced_resume_batch(payload: BatchResumeTextRequest) -> BatchPredictionResponse:
+@app.post(
+    "/predict/advanced/batch",
+    response_model=BatchPredictionResponse,
+    responses={401: {"model": ErrorResponse}, 429: {"model": ErrorResponse}, 503: {"model": ErrorResponse}},
+    tags=["resume"],
+)
+def predict_advanced_resume_batch(
+    payload: BatchResumeTextRequest,
+    _: None = Depends(verify_access_token),
+) -> BatchPredictionResponse:
     try:
         classifier = load_advanced_artifacts(str(ADVANCED_MODEL_DIR))
     except FileNotFoundError as exc:
@@ -175,4 +354,42 @@ def predict_advanced_resume_batch(payload: BatchResumeTextRequest) -> BatchPredi
             )
             for parsed_resume, prediction, probability_row in zip(parsed_resumes, predictions, probabilities, strict=True)
         ]
+    )
+
+
+@app.post(
+    "/evaluate",
+    response_model=EvaluationResponse,
+    responses={401: {"model": ErrorResponse}, 422: {"model": ErrorResponse}, 429: {"model": ErrorResponse}},
+    tags=["analysis"],
+)
+def evaluate_predictions(payload: EvaluationRequest, _: None = Depends(verify_access_token)) -> EvaluationResponse:
+    if len(payload.labels) != len(payload.predictions):
+        raise HTTPException(status_code=422, detail="`labels` and `predictions` must be the same length.")
+
+    metrics = classification_metrics(payload.labels, payload.predictions)
+    return EvaluationResponse(sample_count=len(payload.labels), metrics=metrics)
+
+
+@app.post(
+    "/analyze",
+    response_model=AnalyzeResponse,
+    responses={401: {"model": ErrorResponse}, 429: {"model": ErrorResponse}},
+    tags=["analysis"],
+)
+def analyze_resumes(payload: BatchResumeTextRequest, _: None = Depends(verify_access_token)) -> AnalyzeResponse:
+    parsed_batch = BATCH_PROCESSOR.parse_batch(payload.texts)
+    token_counts = [len(parsed["normalized_text"].split()) for parsed in parsed_batch]
+    skill_counts = [len(parsed["skills"]) for parsed in parsed_batch]
+    experience_values = [parsed["experience_years"] for parsed in parsed_batch if parsed["experience_years"] is not None]
+
+    skill_counter = Counter(skill for parsed in parsed_batch for skill in parsed["skills"])
+
+    sample_count = len(parsed_batch)
+    return AnalyzeResponse(
+        sample_count=sample_count,
+        average_token_count=float(sum(token_counts) / sample_count),
+        average_skill_count=float(sum(skill_counts) / sample_count),
+        average_experience_years=float(sum(experience_values) / len(experience_values)) if experience_values else 0.0,
+        top_skills=[skill for skill, _ in skill_counter.most_common(10)],
     )

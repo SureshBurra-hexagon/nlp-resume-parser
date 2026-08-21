@@ -19,6 +19,11 @@ Baseline implementation of an academic NLP resume parsing project, plus a compre
 - Soft-voting advanced ensemble classifier (`src/models/advanced_resume_classifier.py`)
 - Hyperparameter search and batch inference utilities (`src/optimization/`)
 
+### Phase 4 web, API, and deployment modules
+- Streamlit phase 4 experience with single and batch workflows, history, ranking, export, and analytics (`streamlit_app/app.py`)
+- FastAPI phase 4 backend with parse/predict/evaluate/analyze endpoints, optional bearer auth, CORS, rate limiting, and structured error handling (`fastapi_app/main.py`)
+- Container deployment assets: `Dockerfile`, `docker-compose.yml`, `.env.example`, and runbook (`docs/DEPLOYMENT_RUNBOOK.md`)
+
 ### Scripts and demo
 - Training script: `python scripts/train.py`
 - Evaluation script: `python scripts/evaluate.py`
@@ -47,6 +52,7 @@ python scripts/evaluate_advanced.py
 pytest -q
 streamlit run streamlit_app/app.py
 uvicorn fastapi_app.main:app --reload
+docker compose up --build
 ```
 
 ## FastAPI endpoints
@@ -56,6 +62,8 @@ uvicorn fastapi_app.main:app --reload
 - `POST /predict` - parse resume text and predict the baseline profile category
 - `POST /predict/advanced` - parse resume text and predict with the phase 3 advanced ensemble
 - `POST /predict/advanced/batch` - batch advanced predictions using cached parsing
+- `POST /evaluate` - evaluate classification labels/predictions with core metrics
+- `POST /analyze` - analyze resume batches for aggregate parsing insights
 
 ## Advanced roadmap
 
