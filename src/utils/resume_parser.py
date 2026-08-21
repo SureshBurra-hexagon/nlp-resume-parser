@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 
+from src.ingestion.file_text_extractor import extract_text_from_file
 from src.ner.resume_entities import (
     estimate_experience_years,
     extract_certifications,
@@ -58,3 +59,7 @@ def parse_resume(text: str) -> dict:
         "certifications": certifications,
         "experience_years": experience_years,
     }
+
+
+def parse_resume_file(file_path: str) -> dict:
+    return parse_resume(extract_text_from_file(file_path))

@@ -14,5 +14,6 @@ setup(
         "uvicorn>=0.52.4",
         "transformers>=4.44.0",
         "torch>=2.2.0",
+        "pypdf>=5.0.0",
     ],
 )

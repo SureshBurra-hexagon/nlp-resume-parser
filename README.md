@@ -17,6 +17,11 @@ Baseline implementation of an academic NLP resume parsing project, plus a compre
 - Transformer embedding + Logistic Regression classifier (`src/models/transformer_resume_classifier.py`)
 - Transformer training/evaluation scripts (`scripts/train_transformer.py`, `scripts/evaluate_transformer.py`)
 
+### Phase 2 multimodal ingestion module
+- File-based ingestion for TXT, HTML, DOCX, and PDF resumes (`src/ingestion/file_text_extractor.py`)
+- File-to-structured parsing helper (`src/utils/resume_parser.py::parse_resume_file`)
+- CLI parser for resume files (`scripts/parse_file.py`)
+
 ### Phase 3 advanced modules
 - Section-aware and ontology-aware resume parsing with education, certification, and experience extraction (`src/ner/resume_entities.py`)
 - Hybrid word + character TF-IDF embeddings (`src/embedding/hybrid_features.py`)
@@ -34,6 +39,7 @@ Baseline implementation of an academic NLP resume parsing project, plus a compre
 - Evaluation script: `python scripts/evaluate.py`
 - Transformer training script: `python scripts/train_transformer.py`
 - Transformer evaluation script: `python scripts/evaluate_transformer.py`
+- File parse script: `python scripts/parse_file.py --file /absolute/path/to/resume.pdf`
 - Advanced training script: `python scripts/train_advanced.py`
 - Advanced evaluation/benchmark script: `python scripts/evaluate_advanced.py`
 - Streamlit demo: `streamlit run streamlit_app/app.py`
@@ -56,6 +62,7 @@ python scripts/train.py
 python scripts/evaluate.py
 python scripts/train_transformer.py
 python scripts/evaluate_transformer.py
+python scripts/parse_file.py --file /absolute/path/to/resume.txt
 python scripts/train_advanced.py
 python scripts/evaluate_advanced.py
 pytest -q

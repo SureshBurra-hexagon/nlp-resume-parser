@@ -1,4 +1,4 @@
-.PHONY: test train evaluate train-advanced evaluate-advanced train-transformer evaluate-transformer streamlit api
+.PHONY: test train evaluate train-advanced evaluate-advanced train-transformer evaluate-transformer parse-file streamlit api
 
 test:
 	pytest -q
@@ -20,6 +20,10 @@ train-transformer:
 
 evaluate-transformer:
 	python scripts/evaluate_transformer.py
+
+parse-file:
+	@test -n "$(FILE)" || (echo "Usage: make parse-file FILE=/absolute/path/to/resume.(txt|html|docx|pdf)" && exit 1)
+	python scripts/parse_file.py --file "$(FILE)"
 
 streamlit:
 	streamlit run streamlit_app/app.py
