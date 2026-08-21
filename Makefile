@@ -1,4 +1,4 @@
-.PHONY: test train evaluate train-advanced evaluate-advanced streamlit api
+.PHONY: test train evaluate train-advanced evaluate-advanced train-transformer evaluate-transformer streamlit api
 
 test:
 	pytest -q
@@ -14,6 +14,12 @@ train-advanced:
 
 evaluate-advanced:
 	python scripts/evaluate_advanced.py
+
+train-transformer:
+	python scripts/train_transformer.py
+
+evaluate-transformer:
+	python scripts/evaluate_transformer.py
 
 streamlit:
 	streamlit run streamlit_app/app.py

@@ -12,5 +12,7 @@ setup(
         "streamlit>=1.30.0",
         "fastapi>=0.141.1",
         "uvicorn>=0.52.4",
+        "transformers>=4.44.0",
+        "torch>=2.2.0",
     ],
 )

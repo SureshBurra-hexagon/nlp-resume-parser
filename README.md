@@ -12,6 +12,11 @@ Baseline implementation of an academic NLP resume parsing project, plus a compre
 - Resume profile classification with Logistic Regression (`src/models/resume_classifier.py`)
 - Evaluation metrics: Accuracy, Precision, Recall, F1 (`src/evaluation/metrics.py`)
 
+### Phase 1 transformer module
+- Hugging Face transformer text embeddings with mean pooling (`src/embedding/transformer_features.py`)
+- Transformer embedding + Logistic Regression classifier (`src/models/transformer_resume_classifier.py`)
+- Transformer training/evaluation scripts (`scripts/train_transformer.py`, `scripts/evaluate_transformer.py`)
+
 ### Phase 3 advanced modules
 - Section-aware and ontology-aware resume parsing with education, certification, and experience extraction (`src/ner/resume_entities.py`)
 - Hybrid word + character TF-IDF embeddings (`src/embedding/hybrid_features.py`)
@@ -27,6 +32,8 @@ Baseline implementation of an academic NLP resume parsing project, plus a compre
 ### Scripts and demo
 - Training script: `python scripts/train.py`
 - Evaluation script: `python scripts/evaluate.py`
+- Transformer training script: `python scripts/train_transformer.py`
+- Transformer evaluation script: `python scripts/evaluate_transformer.py`
 - Advanced training script: `python scripts/train_advanced.py`
 - Advanced evaluation/benchmark script: `python scripts/evaluate_advanced.py`
 - Streamlit demo: `streamlit run streamlit_app/app.py`
@@ -47,6 +54,8 @@ pip install -r requirements-dev.txt
 ```bash
 python scripts/train.py
 python scripts/evaluate.py
+python scripts/train_transformer.py
+python scripts/evaluate_transformer.py
 python scripts/train_advanced.py
 python scripts/evaluate_advanced.py
 pytest -q
