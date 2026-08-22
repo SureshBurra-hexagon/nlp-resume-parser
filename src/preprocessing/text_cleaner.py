@@ -97,6 +97,17 @@ def clean_text(text: str) -> str:
     return cleaned
 
 
+def identify_sections(text: str) -> dict[str, str]:
+    """Identify and extract named sections from resume text.
+
+    Delegates to :func:`src.ner.resume_entities.extract_sections` and returns
+    a mapping of canonical section names (e.g. ``"experience"``, ``"skills"``)
+    to their concatenated text content.
+    """
+    from src.ner.resume_entities import extract_sections  # local import avoids circular deps
+    return extract_sections(text)
+
+
 def extract_contact_entities(text: str) -> dict:
     """Extract contact-level entities from text."""
     if not text:

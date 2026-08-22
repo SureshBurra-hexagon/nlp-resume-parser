@@ -5,6 +5,7 @@ from src.preprocessing.text_cleaner import (
     extract_contact_info,
     extract_text_from_pdf,
     extract_text_from_txt,
+    identify_sections,
 )
 
 __all__ = [
@@ -14,4 +15,5 @@ __all__ = [
     "extract_contact_info",
     "extract_text_from_pdf",
     "extract_text_from_txt",
+    "identify_sections",
 ]
