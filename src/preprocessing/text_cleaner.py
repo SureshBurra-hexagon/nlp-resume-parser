@@ -105,3 +105,44 @@ def extract_contact_entities(text: str) -> dict:
         "emails": sorted(set(EMAIL_PATTERN.findall(text))),
         "phones": sorted(set(PHONE_PATTERN.findall(text))),
     }
+
+
+def extract_contact_info(text: str) -> dict:
+    """Extract a comprehensive set of contact details from resume text.
+
+    Returns a dict with the following keys:
+        - emails (list[str]): email addresses found
+        - phones (list[str]): phone numbers found
+        - linkedin (list[str]): LinkedIn profile URLs found
+        - github (list[str]): GitHub profile URLs found
+        - urls (list[str]): other web URLs found (LinkedIn/GitHub excluded)
+        - name (str | None): best-guess full name (first non-empty line)
+    """
+    if not text:
+        return {"emails": [], "phones": [], "linkedin": [], "github": [], "urls": [], "name": None}
+
+    emails = sorted(set(PATTERNS["email"].findall(text)))
+    phones = sorted(set(PATTERNS["phone"].findall(text)))
+    linkedin = sorted(set(PATTERNS["linkedin"].findall(text)))
+    github = sorted(set(PATTERNS["github"].findall(text)))
+
+    all_urls = sorted(set(PATTERNS["url"].findall(text)))
+    excluded = set(linkedin) | set(github)
+    urls = [u for u in all_urls if not any(ex in u for ex in excluded)]
+
+    # Heuristic: the name is typically the first non-empty line of a resume.
+    name: str | None = None
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped and not PATTERNS["email"].search(stripped) and not PATTERNS["phone"].search(stripped):
+            name = stripped
+            break
+
+    return {
+        "emails": emails,
+        "phones": phones,
+        "linkedin": linkedin,
+        "github": github,
+        "urls": urls,
+        "name": name,
+    }
